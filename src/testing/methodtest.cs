@@ -1,5 +1,7 @@
 using System;
 using System.IO;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Python.Test
 {
@@ -237,6 +239,18 @@ namespace Python.Test
         {
             o1 = Guid.NewGuid();
             return true;
+        }
+
+        public static int TestVoidStaticInt = 0;
+
+        public static void TestVoidMethodStatic() {
+            TestVoidStaticInt++;
+        }
+
+        public int TestVoidInstanceInt = 0;
+
+        public void TestVoidMethodInstance() {
+            TestVoidInstanceInt++;
         }
 
         public static void TestVoidSingleOutParam(out int i)
@@ -650,6 +664,38 @@ namespace Python.Test
         public static string Casesensitive()
         {
             return "Casesensitive";
+        }
+
+        public string TestDefaults(string first = "abc", int second = 5, object third = null, string fourth = "def") {
+            return first + second + third + fourth;
+        }
+
+        public string TestGenericTypeParams<T1, T2>(T1 t1, T2 t2) {
+            return $"<{typeof(T1)}, {typeof(T2)}>";
+        }
+
+        public int TestArray(int[] ints) {
+            return ints.Sum();
+        }
+
+        public int TestList(List<int> ints) {
+            return ints.Sum();
+        }
+
+        public int TestIList(IList<int> ints) {
+            return ints.Sum();
+        }
+
+        public int TestIEnumerable(IEnumerable<int> ints) {
+            return ints.Sum();
+        }
+
+        public string TestAmbiguousArray(int[] ints) {
+            return "int";
+        }
+
+        public string TestAmbiguousArray(long[] longs) {
+            return "long";
         }
     }
 

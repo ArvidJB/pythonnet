@@ -839,7 +839,7 @@ namespace Python.Runtime
         /// The Python value must support the Python sequence protocol and the
         /// items in the sequence must be convertible to the target array type.
         /// </summary>
-        private static bool ToArray(IntPtr value, Type obType, out object result, bool setError)
+        internal static bool ToArray(IntPtr value, Type obType, out object result, bool setError)
         {
             Type elementType = obType.GetElementType();
             int size = Runtime.PySequence_Size(value);

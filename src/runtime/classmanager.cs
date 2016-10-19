@@ -380,7 +380,7 @@ namespace Python.Runtime
 
                 var mlist = (MethodInfo[])list.ToArray(typeof(MethodInfo));
 
-                ob = new MethodObject(type, name, mlist);
+                ob = new MethodObject(type, name);
                 ci.members[name] = ob;
             }
 

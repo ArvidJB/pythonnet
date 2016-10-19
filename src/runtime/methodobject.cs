@@ -1,5 +1,9 @@
 using System;
+using System.Collections;
+using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using Microsoft.Scripting.Actions;
 
 namespace Python.Runtime
 {
@@ -12,50 +16,61 @@ namespace Python.Runtime
     /// </remarks>
     internal class MethodObject : ExtensionType
     {
-        internal MethodInfo[] info;
         internal string name;
         internal MethodBinding unbound;
-        internal MethodBinder binder;
-        internal bool is_static = false;
+        internal CallSiteBinder binder;
         internal IntPtr doc;
         internal Type type;
 
-        public MethodObject(Type type, string name, MethodInfo[] info)
-        {
-            _MethodObject(type, name, info);
+        public MethodObject(Type type, string name) : this(type, name, true) {
         }
 
-        public MethodObject(Type type, string name, MethodInfo[] info, bool allow_threads)
-        {
-            _MethodObject(type, name, info);
-            binder.allow_threads = allow_threads;
-        }
-
-        private void _MethodObject(Type type, string name, MethodInfo[] info)
+        public MethodObject(Type type, string name, bool allow_threads)
         {
             this.type = type;
             this.name = name;
-            this.info = info;
-            binder = new MethodBinder();
-            foreach (MethodInfo item in info)
-            {
-                binder.AddMethod(item);
-                if (item.IsStatic)
-                {
-                    this.is_static = true;
+            binder = new CallSiteBinder() { allow_threads = allow_threads};
+        }
+
+
+        public virtual IntPtr Invoke(IntPtr inst, IntPtr args, IntPtr kw, Type[] argTypes, CallSite<Func<CallSite, object, object>> memberCallsite)
+        {
+            object clrTarget = null;
+
+            if (inst == IntPtr.Zero) {
+                clrTarget = new NestedTypeTracker(type);
+            }
+            else {
+                var managedObject = ManagedType.GetManagedObject(inst);
+
+        var clrObject = managedObject as CLRObject;
+                if (clrObject != null) {
+                    clrTarget = clrObject.inst;
+                }
+                else {
+                    var classBase = managedObject as ClassBase;
+                    if (classBase != null) {
+                        clrTarget = classBase.type;
+                    }
+                    else {
+                        Exceptions.SetError(Exceptions.TypeError, "Cannot determine target");
+                        return IntPtr .Zero;
+                    }
                 }
             }
-        }
 
-        public virtual IntPtr Invoke(IntPtr inst, IntPtr args, IntPtr kw)
-        {
-            return Invoke(inst, args, kw, null);
-        }
+                try
+{
+            var memberToInvoke = (MemberTracker)memberCallsite.Target(memberCallsite, clrTarget);
 
-        public virtual IntPtr Invoke(IntPtr target, IntPtr args, IntPtr kw, MethodBase info)
-        {
-            return binder.Invoke(target, args, kw, info, this.info);
-        }
+            return binder.Invoke( memberToInvoke , name, args, kw, argTypes);
+                }
+                catch (Exception e)
+                {
+                    Exceptions.SetError(Exceptions.TypeError, e.Message);
+                    return IntPtr.Zero;
+                }
+            }
 
         /// <summary>
         /// Helper to get docstrings from reflected method / param info.
@@ -68,12 +83,12 @@ namespace Python.Runtime
             }
             var str = "";
             Type marker = typeof(DocStringAttribute);
-            MethodBase[] methods = binder.GetMethods();
-            foreach (MethodBase method in methods)
+            var methods = type.GetMethods(BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            foreach (var method in methods)
             {
-                if (str.Length > 0)
-                {
-                    str += Environment.NewLine;
+                if (method.Name == name)
+                {if (str.Length > 0)
+                {    str += Environment.NewLine;
                 }
                 var attrs = (Attribute[])method.GetCustomAttributes(marker, false);
                 if (attrs.Length == 0)
@@ -83,31 +98,13 @@ namespace Python.Runtime
                 else
                 {
                     var attr = (DocStringAttribute)attrs[0];
-                    str += attr.DocString;
+                    str += attr.DocString;}
                 }
             }
             doc = Runtime.PyString_FromString(str);
             return doc;
         }
 
-
-        /// <summary>
-        /// This is a little tricky: a class can actually have a static method
-        /// and instance methods all with the same name. That makes it tough
-        /// to support calling a method 'unbound' (passing the instance as the
-        /// first argument), because in this case we can't know whether to call
-        /// the instance method unbound or call the static method.
-        /// </summary>
-        /// <remarks>
-        /// The rule we is that if there are both instance and static methods
-        /// with the same name, then we always call the static method. So this
-        /// method returns true if any of the methods that are represented by
-        /// the descriptor are static methods (called by MethodBinding).
-        /// </remarks>
-        internal bool IsStatic()
-        {
-            return is_static;
-        }
 
         /// <summary>
         /// Descriptor __getattribute__ implementation.

@@ -220,9 +220,7 @@ namespace Python.Runtime
                     if (attrs.Length > 0)
                     {
                         string name = method.Name;
-                        var mi = new MethodInfo[1];
-                        mi[0] = method;
-                        var m = new ModuleFunctionObject(type, name, mi, allow_threads);
+                        ModuleFunctionObject m = new ModuleFunctionObject(type, name, method, allow_threads);
                         StoreAttribute(name, m);
                     }
                 }
@@ -416,7 +414,7 @@ namespace Python.Runtime
         /// clr.GetClrType(IComparable) gives you the Type for IComparable,
         /// that you can e.g. perform reflection on. Similar to typeof(IComparable) in C#
         /// or clr.GetClrType(IComparable) in IronPython.
-        /// 
+        ///
         /// </summary>
         /// <param name="type"></param>
         /// <returns>The Type object</returns>

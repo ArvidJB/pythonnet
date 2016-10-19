@@ -73,6 +73,22 @@
     <DebugType>full</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.Dynamic, Version=1.1.2.22, Culture=neutral, PublicKeyToken=7f709c5b713576e1, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\DynamicLanguageRuntime.1.1.2\lib\Net40\Microsoft.Dynamic.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.Scripting, Version=1.1.2.22, Culture=neutral, PublicKeyToken=7f709c5b713576e1, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\DynamicLanguageRuntime.1.1.2\lib\Net40\Microsoft.Scripting.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.Scripting.AspNet, Version=1.1.1.21, Culture=neutral, PublicKeyToken=7f709c5b713576e1, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\DynamicLanguageRuntime.1.1.2\lib\Net40\Microsoft.Scripting.AspNet.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.Scripting.Metadata, Version=1.1.2.22, Culture=neutral, PublicKeyToken=7f709c5b713576e1, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\DynamicLanguageRuntime.1.1.2\lib\Net40\Microsoft.Scripting.Metadata.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
@@ -82,6 +98,7 @@
     </Compile>
     <Compile Include="arrayobject.cs" />
     <Compile Include="assemblymanager.cs" />
+    <Compile Include="callsitebinder.cs" />
     <Compile Include="classderived.cs" />
     <Compile Include="classbase.cs" />
     <Compile Include="classmanager.cs" />
@@ -132,9 +149,16 @@
     <Compile Include="pyscope.cs" />
     <Compile Include="pysequence.cs" />
     <Compile Include="pystring.cs" />
+    <Compile Include="pythonbinder.cs" />
     <Compile Include="pythonengine.cs" />
     <Compile Include="pythonexception.cs" />
+    <Compile Include="pythongetmemberbinder.cs" />
+    <Compile Include="pythoninvokememberbinder.cs" />
+    <Compile Include="pythonoverloadresolverfactory.cs" />
+    <Compile Include="pythonreturnconvertbinder.cs" />
+    <Compile Include="pythonsequenceargbox.cs" />
     <Compile Include="pytuple.cs" />
+    <Compile Include="refreturnbox.cs" />
     <Compile Include="runtime.cs" />
     <Compile Include="typemanager.cs" />
     <Compile Include="typemethod.cs" />
@@ -150,6 +174,7 @@
     <Compile Include="interop36.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="packages.config" />
     <None Include="..\pythonnet.snk" />
   </ItemGroup>
   <ItemGroup>

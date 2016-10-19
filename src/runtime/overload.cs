@@ -36,14 +36,7 @@ namespace Python.Runtime
                 return Exceptions.RaiseTypeError("type(s) expected");
             }
 
-            MethodInfo mi = MethodBinder.MatchSignature(self.m.info, types);
-            if (mi == null)
-            {
-                var e = "No match found for signature";
-                return Exceptions.RaiseTypeError(e);
-            }
-
-            var mb = new MethodBinding(self.m, self.target) { info = mi };
+            MethodBinding mb = new MethodBinding(self.m, self.target, genericParameterTypes: null, argTypes: types);
             Runtime.XIncref(mb.pyHandle);
             return mb.pyHandle;
         }

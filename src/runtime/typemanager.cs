@@ -516,9 +516,7 @@ namespace Python.Runtime
                         if (attrs.Length > 0)
                         {
                             string method_name = method.Name;
-                            var mi = new MethodInfo[1];
-                            mi[0] = method;
-                            MethodObject m = new TypeMethod(type, method_name, mi);
+                            MethodObject m = new TypeMethod(type, method_name, method);
                             Runtime.PyDict_SetItemString(dict, method_name, m.pyHandle);
                             addedMethods.Add(method_name);
                         }

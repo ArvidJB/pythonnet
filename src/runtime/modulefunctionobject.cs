@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Reflection;
+using Microsoft.Scripting.Actions;
 
 namespace Python.Runtime
 {
@@ -9,13 +10,11 @@ namespace Python.Runtime
     /// </summary>
     internal class ModuleFunctionObject : MethodObject
     {
-        public ModuleFunctionObject(Type type, string name, MethodInfo[] info, bool allow_threads)
-            : base(type, name, info, allow_threads)
-        {
-            if (info.Any(item => !item.IsStatic))
-            {
-                throw new Exception("Module function must be static.");
-            }
+        private readonly MemberTracker _memberTracker;
+
+        public ModuleFunctionObject(Type type, string name, MethodInfo info, bool allow_threads)
+            : base(type, name, allow_threads) {
+            _memberTracker = MemberTracker.FromMemberInfo(info);
         }
 
         /// <summary>
@@ -24,7 +23,13 @@ namespace Python.Runtime
         public static IntPtr tp_call(IntPtr ob, IntPtr args, IntPtr kw)
         {
             var self = (ModuleFunctionObject)GetManagedObject(ob);
-            return self.Invoke(ob, args, kw);
+            try {
+                return self.binder.Invoke(self._memberTracker, self.name, args, kw, null);
+            }
+            catch (Exception e) {
+                Exceptions.SetError(Exceptions.TypeError, e.Message);
+                return IntPtr.Zero;
+            }
         }
 
         /// <summary>

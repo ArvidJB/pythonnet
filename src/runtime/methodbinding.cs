@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Reflection;
 
 namespace Python.Runtime
@@ -11,12 +12,14 @@ namespace Python.Runtime
     /// </summary>
     internal class MethodBinding : ExtensionType
     {
-        internal MethodInfo info;
         internal MethodObject m;
         internal IntPtr target;
         internal IntPtr targetType;
+        private readonly Type[] _genericParameterTypes;
+        private readonly Type[] _argTypes;
+        private readonly CallSite<Func<CallSite, object, object>> _memberCallsite;
 
-        public MethodBinding(MethodObject m, IntPtr target, IntPtr targetType)
+        public MethodBinding(MethodObject m, IntPtr target, IntPtr targetType, Type[] genericParameterTypes, Type[] argTypes)
         {
             Runtime.XIncref(target);
             this.target = target;
@@ -28,11 +31,24 @@ namespace Python.Runtime
             }
             this.targetType = targetType;
 
-            this.info = null;
             this.m = m;
+
+            _genericParameterTypes = genericParameterTypes;
+            _argTypes = argTypes;
+
+            _memberCallsite = CallSite<Func<CallSite, object, object>>.Create(new PythonGetMemberBinder(m.name, _genericParameterTypes, _argTypes));
         }
 
-        public MethodBinding(MethodObject m, IntPtr target) : this(m, target, IntPtr.Zero)
+        public MethodBinding(MethodObject m, IntPtr target, IntPtr targetType) : this(m, target, targetType, null, null)
+        {
+        }
+
+        public MethodBinding(MethodObject m, IntPtr target) : this(m, target, IntPtr.Zero, null, null)
+        {
+        }
+
+        public MethodBinding(MethodObject m, IntPtr target, Type[] genericParameterTypes, Type[] argTypes)
+            : this(m, target, IntPtr.Zero, genericParameterTypes, argTypes)
         {
         }
 
@@ -49,13 +65,7 @@ namespace Python.Runtime
                 return Exceptions.RaiseTypeError("type(s) expected");
             }
 
-            MethodInfo mi = MethodBinder.MatchParameters(self.m.info, types);
-            if (mi == null)
-            {
-                return Exceptions.RaiseTypeError("No match found for given type params");
-            }
-
-            var mb = new MethodBinding(self.m, self.target) { info = mi };
+            MethodBinding mb = new MethodBinding(self.m, self.target, genericParameterTypes: types, argTypes: self._argTypes);
             Runtime.XIncref(mb.pyHandle);
             return mb.pyHandle;
         }
@@ -100,91 +110,7 @@ namespace Python.Runtime
         {
             var self = (MethodBinding)GetManagedObject(ob);
 
-            // This works around a situation where the wrong generic method is picked,
-            // for example this method in the tests: string Overloaded<T>(int arg1, int arg2, string arg3)
-            if (self.info != null)
-            {
-                if (self.info.IsGenericMethod)
-                {
-                    int len = Runtime.PyTuple_Size(args); //FIXME: Never used
-                    Type[] sigTp = Runtime.PythonArgsToTypeArray(args, true);
-                    if (sigTp != null)
-                    {
-                        Type[] genericTp = self.info.GetGenericArguments();
-                        MethodInfo betterMatch = MethodBinder.MatchSignatureAndParameters(self.m.info, genericTp, sigTp);
-                        if (betterMatch != null)
-                        {
-                            self.info = betterMatch;
-                        }
-                    }
-                }
-            }
-
-            // This supports calling a method 'unbound', passing the instance
-            // as the first argument. Note that this is not supported if any
-            // of the overloads are static since we can't know if the intent
-            // was to call the static method or the unbound instance method.
-            var disposeList = new List<IntPtr>();
-            try
-            {
-                IntPtr target = self.target;
-
-                if (target == IntPtr.Zero && !self.m.IsStatic())
-                {
-                    int len = Runtime.PyTuple_Size(args);
-                    if (len < 1)
-                    {
-                        Exceptions.SetError(Exceptions.TypeError, "not enough arguments");
-                        return IntPtr.Zero;
-                    }
-                    target = Runtime.PyTuple_GetItem(args, 0);
-                    Runtime.XIncref(target);
-                    disposeList.Add(target);
-
-                    args = Runtime.PyTuple_GetSlice(args, 1, len);
-                    disposeList.Add(args);
-                }
-
-                // if the class is a IPythonDerivedClass and target is not the same as self.targetType
-                // (eg if calling the base class method) then call the original base class method instead
-                // of the target method.
-                IntPtr superType = IntPtr.Zero;
-                if (Runtime.PyObject_TYPE(target) != self.targetType)
-                {
-                    var inst = GetManagedObject(target) as CLRObject;
-                    if (inst?.inst is IPythonDerivedType)
-                    {
-                        var baseType = GetManagedObject(self.targetType) as ClassBase;
-                        if (baseType != null)
-                        {
-                            string baseMethodName = "_" + baseType.type.Name + "__" + self.m.name;
-                            IntPtr baseMethod = Runtime.PyObject_GetAttrString(target, baseMethodName);
-                            if (baseMethod != IntPtr.Zero)
-                            {
-                                var baseSelf = GetManagedObject(baseMethod) as MethodBinding;
-                                if (baseSelf != null)
-                                {
-                                    self = baseSelf;
-                                }
-                                Runtime.XDecref(baseMethod);
-                            }
-                            else
-                            {
-                                Runtime.PyErr_Clear();
-                            }
-                        }
-                    }
-                }
-
-                return self.m.Invoke(target, args, kw, self.info);
-            }
-            finally
-            {
-                foreach (IntPtr ptr in disposeList)
-                {
-                    Runtime.XDecref(ptr);
-                }
-            }
+            return self.m.Invoke(self.target, args, kw, self._argTypes, self._memberCallsite);
         }
 
 

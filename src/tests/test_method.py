@@ -449,6 +449,58 @@ def test_explicit_selection_with_ref_modifier():
     assert result[0] is True
     assert result[1] == "output string"
 
+    def testOverloadSelection(self):
+        """Check overload selection."""
+        from Python.Test import ISayHello1, InterfaceTest, ShortEnum
+        from System import Array
+        inst = InterfaceTest()
+
+        value = MethodTest.Overloaded(True)
+        self.assertTrue(value == True)
+
+        value = MethodTest.Overloaded(255)
+        self.assertTrue(value == 255)
+
+        value = MethodTest.Overloaded(127)
+        self.assertTrue(value == 127)
+
+        value = MethodTest.Overloaded(six.u('A'))
+        self.assertTrue(value == six.u('A'))
+
+        value = MethodTest.Overloaded(2147483647)
+        self.assertTrue(value == 2147483647)
+
+        value = MethodTest.Overloaded(long(9223372036854775807))
+        self.assertTrue(value == long(9223372036854775807))
+
+        value = MethodTest.Overloaded(3.402823e38)
+        self.assertTrue(value == 3.402823e38)
+
+        value = MethodTest.Overloaded(1.7976931348623157e308)
+        self.assertTrue(value == 1.7976931348623157e308)
+
+        value = MethodTest.Overloaded(System.Decimal.One)
+        self.assertTrue(value == System.Decimal.One)
+
+        value = MethodTest.Overloaded("spam")
+        self.assertTrue(value == "spam")
+
+        value = MethodTest.Overloaded.__overloads__[ShortEnum](ShortEnum.Zero)
+        self.assertTrue(value == ShortEnum.Zero)
+
+        value = MethodTest.Overloaded(inst)
+        self.assertTrue(value.__class__ == inst.__class__)
+
+        atype = Array[System.Object]
+        value = MethodTest.Overloaded("one", 1, atype([1, 2, 3]))
+        self.assertTrue(value == 3)
+
+        value = MethodTest.Overloaded("one", 1)
+        self.assertTrue(value == 1)
+
+        value = MethodTest.Overloaded(1, "one")
+        self.assertTrue(value == 1)
+
 
 def test_explicit_overload_selection():
     """Check explicit overload selection using [] syntax."""
@@ -743,6 +795,55 @@ def test_we_can_bind_to_encoding_get_string():
 
     data = ''.join(data)
     assert data == 'Some testing string'
+
+    def testNamedArgs(self):
+        mt = MethodTest()
+        r1 = mt.TestDefaults()
+        self.assertEqual("abc5def", r1)
+        r2 = mt.TestDefaults(third="foo")
+        self.assertEqual("abc5foodef", r2)
+        r3 = mt.TestDefaults(second=2, third="foo")
+        self.assertEqual("abc2foodef", r3)
+        r4 = mt.TestDefaults(third="foo", second=2, fourth="bla")
+        self.assertEqual("abc2foobla", r4)
+        r5 = mt.TestDefaults("hey", 3, third="foo")
+        self.assertEqual("hey3foodef", r5)
+
+    def testVoidMethod(self):
+        a = MethodTest.TestVoidStaticInt
+        MethodTest.TestVoidMethodStatic()
+        self.assertEqual(a + 1, MethodTest.TestVoidStaticInt)
+        mt = MethodTest()
+        b = mt.TestVoidInstanceInt
+        mt.TestVoidMethodInstance()
+        self.assertEqual(b + 1, mt.TestVoidInstanceInt)
+
+    def testGenericTypeSelection(self):
+        mt = MethodTest()
+
+        self.assertEqual("<System.Int32, System.Double>", mt.TestGenericTypeParams(5, 5.3))
+        self.assertEqual("<System.Double, System.Double>",
+                         mt.TestGenericTypeParams[System.Double, System.Double](5, 5.3))
+
+        self.assertEqual("<System.String, Python.Test.MethodTest>",
+                         mt.TestGenericTypeParams("hey", mt))
+        self.assertEqual("<System.Object, System.Object>",
+                         mt.TestGenericTypeParams[System.Object, System.Object]("hey", mt))
+
+    def testSequences(self):
+        mt = MethodTest()
+        self.assertEqual(6, mt.TestArray([1, 2, 3]))
+        self.assertEqual(10, mt.TestList([1, 2, 3, 4]))
+        self.assertEqual(10, mt.TestIList([1, 2, 3, 4]))
+        self.assertEqual(15, mt.TestIEnumerable([1, 2, 3, 4, 5]))
+
+        self.assertEqual("long", mt.TestAmbiguousArray([1, 2, 3]))
+
+    def testAbstractMemberMethod(self):
+        # will call Type.Equals(Type)
+        bt = System.Type.GetType("System.Boolean")
+        dt = System.Type.GetType("System.Double")
+        self.assertEqual(False, dt.Equals(bt))
 
 
 def test_wrong_overload():
