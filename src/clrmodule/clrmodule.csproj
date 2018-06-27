@@ -65,9 +65,6 @@
     <Optimize>true</Optimize>
     <DebugType>pdbonly</DebugType>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'DebugWin|x64'">
-    <DefineConstants>TRACE;DEBUG;PYTHON3</DefineConstants>
-  </PropertyGroup>
   <ItemGroup>
     <Reference Include="RGiesecke.DllExport.Metadata">
       <HintPath>..\..\packages\UnmanagedExports.1.2.7\lib\net\RGiesecke.DllExport.Metadata.dll</HintPath>
