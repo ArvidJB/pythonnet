@@ -11,8 +11,8 @@ namespace Python.Runtime
 {
     /// <summary>
     /// Uses <see cref="CallSite"/>s to invoke CLR methods from Python
-    /// 
-    /// We convert the Python arguments to their CLR counterparts, dispatch the call based 
+    ///
+    /// We convert the Python arguments to their CLR counterparts, dispatch the call based
     /// on the converted arguments, and then convert the returned data back to Python
     /// </summary>
     internal class CallSiteBinder
@@ -62,8 +62,8 @@ namespace Python.Runtime
         /// <summary>
         /// Invoke member <paramref name="name"/> using <paramref name="memberToInvoke"/>
         /// </summary>
-        /// <param name="memberToInvoke">should be 
-        /// a <see cref="Microsoft.Scripting.Actions.BoundMemberTracker"/> for instance calls 
+        /// <param name="memberToInvoke">should be
+        /// a <see cref="Microsoft.Scripting.Actions.BoundMemberTracker"/> for instance calls
         /// or a <see cref="Microsoft.Scripting.Actions.MethodGroup"/> for static calls</param>
         public IntPtr Invoke(MemberTracker memberToInvoke, string name, IntPtr args, IntPtr kw, Type[] argTypes) {
             try
@@ -234,7 +234,7 @@ namespace Python.Runtime
                                 clrtype = argTypes[n];
                             else
                             {
-#if (PYTHON32 || PYTHON33 || PYTHON34 || PYTHON35)
+#if (PYTHON3)
                                 if (pyoptype == Runtime.PyIntType) {
                                     // should convert to int/long depending on size
                                     clrtype = typeof(Int32);

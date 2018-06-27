@@ -43,7 +43,7 @@ namespace Python.Runtime
             else {
                 var managedObject = ManagedType.GetManagedObject(inst);
 
-        var clrObject = managedObject as CLRObject;
+                var clrObject = managedObject as CLRObject;
                 if (clrObject != null) {
                     clrTarget = clrObject.inst;
                 }
@@ -54,23 +54,23 @@ namespace Python.Runtime
                     }
                     else {
                         Exceptions.SetError(Exceptions.TypeError, "Cannot determine target");
-                        return IntPtr .Zero;
+                        return IntPtr.Zero;
                     }
                 }
             }
 
-                try
-{
-            var memberToInvoke = (MemberTracker)memberCallsite.Target(memberCallsite, clrTarget);
+            try
+            {
+                var memberToInvoke = (MemberTracker)memberCallsite.Target(memberCallsite, clrTarget);
 
-            return binder.Invoke( memberToInvoke , name, args, kw, argTypes);
-                }
-                catch (Exception e)
-                {
-                    Exceptions.SetError(Exceptions.TypeError, e.Message);
-                    return IntPtr.Zero;
-                }
+                return binder.Invoke(memberToInvoke, name, args, kw, argTypes);
             }
+            catch (Exception e)
+            {
+                Exceptions.SetError(Exceptions.TypeError, e.Message);
+                return IntPtr.Zero;
+            }
+        }
 
         /// <summary>
         /// Helper to get docstrings from reflected method / param info.
