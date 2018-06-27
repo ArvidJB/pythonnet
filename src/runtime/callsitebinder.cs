@@ -262,7 +262,7 @@ namespace Python.Runtime
                                 // box it and postpone decision
                                 clrArgs[n] = new PythonSequenceArgBox(op);
                                 // do not allow other threads to run in this case
-                                delayedConversion = false;
+                                delayedConversion = true;
                             }
                             else if (clrtype != null)
                             {
