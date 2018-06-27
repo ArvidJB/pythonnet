@@ -293,6 +293,10 @@ namespace Python.Runtime
                                     {
                                         clrArgs[n] = classBase.type;
                                     }
+                                    else if (Runtime.PyTypeType == Runtime.PyObject_TYPE(op))
+                                    {
+                                        clrArgs[n] = Converter.GetTypeByAlias(op);
+                                    }
                                     else
                                     {
                                         Exceptions.SetError(Exceptions.TypeError,
