@@ -68,8 +68,10 @@ namespace Python.Runtime
         public IntPtr Invoke(MemberTracker memberToInvoke, string name, IntPtr args, IntPtr kw, Type[] argTypes) {
             try
             {
+                bool delayedConversion;
+
                 // convert all Python arguments to CLR types
-                var clrArgs = ClrArgs(args, kw, argTypes);
+                var clrArgs = ClrArgs(args, kw, argTypes, out delayedConversion);
                 if (clrArgs == null)
                     return IntPtr.Zero;
 
@@ -89,7 +91,7 @@ namespace Python.Runtime
                 }
 
                 IntPtr ts = IntPtr.Zero;
-                if (allow_threads)
+                if (allow_threads && !delayedConversion)
                 {
                     ts = PythonEngine.BeginAllowThreads();
                 }
@@ -162,7 +164,7 @@ namespace Python.Runtime
                 }
                 finally
                 {
-                    if (allow_threads)
+                    if (allow_threads && !delayedConversion)
                     {
                         PythonEngine.EndAllowThreads(ts);
                     }
@@ -196,8 +198,9 @@ namespace Python.Runtime
         /// <param name="args">Python tuple with function call arguments</param>
         /// <param name="kw">Python dictionary with named arguments</param>
         /// <param name="argTypes">types the args should be converted to</param>
+        /// <param name="delayedConversion">if conversion is delayed, will be set to false</param>
         /// <returns>null if an error occured</returns>
-        private static object[] ClrArgs(IntPtr args, IntPtr kw, Type[] argTypes = null) {
+        private static object[] ClrArgs(IntPtr args, IntPtr kw, Type[] argTypes, out bool delayedConversion) {
             var nargs = Runtime.PyTuple_Size(args);
 
             var nkw = 0;
@@ -209,6 +212,8 @@ namespace Python.Runtime
             }
 
             var clrArgs = new object[nargs + nkw];
+
+            delayedConversion = false;
 
             for (var n = 0; n < nargs + nkw; n++)
             {
@@ -256,6 +261,8 @@ namespace Python.Runtime
                             {
                                 // box it and postpone decision
                                 clrArgs[n] = new PythonSequenceArgBox(op);
+                                // do not allow other threads to run in this case
+                                delayedConversion = false;
                             }
                             else if (clrtype != null)
                             {
