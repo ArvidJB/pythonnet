@@ -173,7 +173,29 @@ namespace Python.Runtime
             // numeric conversions, only accuracy loss
             if (level >= NarrowingLevel.One && HasImplicitNumericConversion(fromType, toType))
                 return true;
+            // any number can be converted to a boolean
+            if (level >= NarrowingLevel.Two && toType == typeof(bool) && HasConversionToBool(fromType))
+                return true;
             return false;
+        }
+
+        internal static readonly Dictionary<TypeCode, MethodInfo> ToBooleanMethodInfos = new Dictionary<TypeCode, MethodInfo>()
+        {
+            { TypeCode.SByte, typeof(Convert).GetMethod("ToBoolean", new [] {typeof(sbyte)})},
+            { TypeCode.Byte, typeof(Convert).GetMethod("ToBoolean", new [] {typeof(byte)})},
+            { TypeCode.Int16, typeof(Convert).GetMethod("ToBoolean", new [] {typeof(short)})},
+            { TypeCode.UInt16, typeof(Convert).GetMethod("ToBoolean", new [] {typeof(ushort)})},
+            { TypeCode.Int32, typeof(Convert).GetMethod("ToBoolean", new [] {typeof(int)})},
+            { TypeCode.UInt32, typeof(Convert).GetMethod("ToBoolean", new [] {typeof(uint)})},
+            { TypeCode.Int64, typeof(Convert).GetMethod("ToBoolean", new [] {typeof(long)})},
+            { TypeCode.UInt64, typeof(Convert).GetMethod("ToBoolean", new [] {typeof(ulong)})},
+            { TypeCode.Single, typeof(Convert).GetMethod("ToBoolean", new [] {typeof(float)})},
+            { TypeCode.Double, typeof(Convert).GetMethod("ToBoolean", new [] {typeof(double)})},
+            { TypeCode.Decimal, typeof(Convert).GetMethod("ToBoolean", new [] {typeof(decimal)})},
+        };
+
+        private bool HasConversionToBool(Type fromType) {
+            return ToBooleanMethodInfos.ContainsKey(Type.GetTypeCode(fromType));
         }
 
         public override MemberGroup GetMember(MemberRequestKind action, Type type, string name) {

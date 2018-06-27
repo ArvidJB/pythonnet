@@ -126,6 +126,16 @@ namespace Python.Runtime
                     var arrayDynamicMetaObject = new DynamicMetaObject(toArrayCallExpr, BindingRestrictions.Empty);
                     return base.Convert(arrayDynamicMetaObject, arrayType, info, toType);
                 }
+
+                if (toType == typeof(bool))
+                {
+                    MethodInfo methodInfo;
+                    if (PythonBinder.ToBooleanMethodInfos.TryGetValue(Type.GetTypeCode(metaObject.LimitType), out methodInfo))
+                    {
+                        return Expression.Call(methodInfo, metaObject.Expression);
+                    }
+                }
+
                 return base.Convert(metaObject, restrictedType, info, toType);
             }
 
