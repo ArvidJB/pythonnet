@@ -33,13 +33,13 @@ namespace Python.Runtime
 
         /// <summary>
         /// Implicit *widening* numeric conversions
-        /// 
+        ///
         /// There is a potential for accuracy-loss, e.g., when converting from Int64 to Double
         /// </summary>
-        internal static bool HasImplicitNumericConversion(Type fromType, Type toType) {
+        internal static bool HasWideningNumericConversion(Type fromType, Type toType) {
             if (fromType == typeof(bool)) {
                 if (toType == typeof(int)) return true;
-                return HasImplicitNumericConversion(typeof(int), toType);
+                return HasWideningNumericConversion(typeof(int), toType);
             }
 
             switch (Type.GetTypeCode(fromType)) {
@@ -133,20 +133,6 @@ namespace Python.Runtime
                         default:
                             return false;
                     }
-                case TypeCode.Char:
-                    switch (Type.GetTypeCode(toType)) {
-                        case TypeCode.UInt16:
-                        case TypeCode.Int32:
-                        case TypeCode.UInt32:
-                        case TypeCode.Int64:
-                        case TypeCode.UInt64:
-                        case TypeCode.Single:
-                        case TypeCode.Double:
-                        case TypeCode.Decimal:
-                            return true;
-                        default:
-                            return false;
-                    }
                 case TypeCode.Single:
                     switch (Type.GetTypeCode(toType)) {
                         case TypeCode.Double:
@@ -164,17 +150,108 @@ namespace Python.Runtime
             }
         }
 
+        /// <summary>
+        /// Implicit *narrowing* numeric conversions
+        /// </summary>
+        internal static bool HasNarrowingNumericConversion(Type fromType, Type toType) {
+            switch (Type.GetTypeCode(fromType)) {
+                case TypeCode.Int16:
+                    switch (Type.GetTypeCode(toType)) {
+                        case TypeCode.Byte:
+                        case TypeCode.SByte:
+                            return true;
+                        default:
+                            return false;
+                    }
+                case TypeCode.UInt16:
+                    switch (Type.GetTypeCode(toType)) {
+                        case TypeCode.Byte:
+                        case TypeCode.SByte:
+                            return true;
+                        default:
+                            return false;
+                    }
+                case TypeCode.Int32:
+                    switch (Type.GetTypeCode(toType)) {
+                        case TypeCode.Byte:
+                        case TypeCode.SByte:
+                        case TypeCode.Int16:
+                        case TypeCode.UInt16:
+                            return true;
+                        default:
+                            return false;
+                    }
+                case TypeCode.UInt32:
+                    switch (Type.GetTypeCode(toType)) {
+                        case TypeCode.Byte:
+                        case TypeCode.SByte:
+                        case TypeCode.Int16:
+                        case TypeCode.UInt16:
+                            return true;
+                        default:
+                            return false;
+                    }
+                case TypeCode.Int64:
+                    switch (Type.GetTypeCode(toType)) {
+                        case TypeCode.Byte:
+                        case TypeCode.SByte:
+                        case TypeCode.Int16:
+                        case TypeCode.UInt16:
+                        case TypeCode.Int32:
+                        case TypeCode.UInt32:
+                            return true;
+                        default:
+                            return false;
+                    }
+                case TypeCode.UInt64:
+                    switch (Type.GetTypeCode(toType)) {
+                        case TypeCode.Byte:
+                        case TypeCode.SByte:
+                        case TypeCode.Int16:
+                        case TypeCode.UInt16:
+                        case TypeCode.Int32:
+                        case TypeCode.UInt32:
+                            return true;
+                        default:
+                            return false;
+                    }
+                case TypeCode.Double:
+                    switch (Type.GetTypeCode(toType)) {
+                        case TypeCode.Byte:
+                        case TypeCode.SByte:
+                        case TypeCode.Int16:
+                        case TypeCode.UInt16:
+                        case TypeCode.Int32:
+                        case TypeCode.UInt32:
+                        case TypeCode.Int64:
+                        case TypeCode.UInt64:
+                        case TypeCode.Single:
+                            return true;
+                        default:
+                            return false;
+                    }
+                default:
+                    return false;
+            }
+        }
+
         public override bool CanConvertFrom(Type fromType, Type toType, bool toNotNullable, NarrowingLevel level) {
             if (base.CanConvertFrom(fromType, toType, toNotNullable, level))
                 return true;
             // int => enum conversion
             if (fromType.IsPrimitive && Type.GetTypeCode(fromType) == Type.GetTypeCode(toType))
                 return true;
-            // numeric conversions, only accuracy loss
-            if (level >= NarrowingLevel.One && HasImplicitNumericConversion(fromType, toType))
+            // numeric conversions, no accuracy loss
+            if (level >= NarrowingLevel.One && HasWideningNumericConversion(fromType, toType))
                 return true;
             // any number can be converted to a boolean
             if (level >= NarrowingLevel.Two && toType == typeof(bool) && HasConversionToBool(fromType))
+                return true;
+            // numeric conversion, have to check for accuracy loss
+            if (level >= NarrowingLevel.Three && HasNarrowingNumericConversion(fromType, toType))
+                return true;
+            // python does not have single character type: convert from string to char, have to check if it's one character only later
+            if (level >= NarrowingLevel.Three && fromType == typeof(string) && toType == typeof(char))
                 return true;
             return false;
         }
@@ -234,7 +311,7 @@ namespace Python.Runtime
         }
 
         private static IEnumerable<MemberTracker> AddOverloadsForOutParameters(MemberTracker memberTracker) {
-            // keep the original 
+            // keep the original
             yield return memberTracker;
 
             var methodTracker = memberTracker as MethodTracker;

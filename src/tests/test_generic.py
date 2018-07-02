@@ -303,6 +303,7 @@ def test_generic_method_type_handling():
     """Test argument conversion / binding for generic methods."""
     from Python.Test import InterfaceTest, ISayHello1, ShortEnum
     import System
+    from System import ArgumentException
 
     # FIXME: The value doesn't fit into Int64 and PythonNet doesn't
     # recognize it as UInt64 for unknown reasons.
@@ -312,6 +313,8 @@ def test_generic_method_type_handling():
     assert_generic_method_by_type(System.Byte, 255)
     assert_generic_method_by_type(System.SByte, 127)
     assert_generic_method_by_type(System.Char, u'A')
+    with pytest.raises(ArgumentException):
+        assert_generic_method_by_type(System.Char, u'ABC')
     assert_generic_method_by_type(System.Int16, 32767)
     assert_generic_method_by_type(System.Int32, 2147483647)
     assert_generic_method_by_type(int, 2147483647)

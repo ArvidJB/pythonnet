@@ -81,8 +81,8 @@ namespace Python.Runtime
                 if (ifc1 != null && ifc2 != null) {
                     var et1 = ifc1.GetGenericArguments()[0];
                     var et2 = ifc2.GetGenericArguments()[0];
-                    var et1leqet2 = PythonBinder.HasImplicitNumericConversion(et1, et2);
-                    var et2leqet1 = PythonBinder.HasImplicitNumericConversion(et2, et1);
+                    var et1leqet2 = PythonBinder.HasWideningNumericConversion(et1, et2);
+                    var et2leqet1 = PythonBinder.HasWideningNumericConversion(et2, et1);
                     if (et1leqet2 && !et2leqet1)
                         return Candidate.Two;
                     if (!et1leqet2 && et2leqet1)
@@ -90,6 +90,10 @@ namespace Python.Runtime
                 }
                 return base.PreferConvert(t1, t2);
             }
+
+            private static readonly MethodInfo ConvertToChar = typeof(Convert).GetMethod("ToChar", new[] { typeof(string) });
+
+            private static readonly ConstructorInfo ArgumentExceptionConstructorInfo = typeof(ArgumentException).GetConstructor(new []{typeof(string)});
 
             /// <summary>
             /// Conversion logic for Python sequences to C# enumerables
@@ -134,6 +138,15 @@ namespace Python.Runtime
                     {
                         return Expression.Call(methodInfo, metaObject.Expression);
                     }
+                }
+
+                if (toType == typeof(char) && metaObject.LimitType == typeof(string))
+                {
+                    return Expression.Condition(
+                        Expression.Equal(Expression.Property(metaObject.Expression, "Length"), Expression.Constant(1)),
+                        Expression.Call(ConvertToChar, metaObject.Expression),
+                        Expression.Throw(Expression.New(ArgumentExceptionConstructorInfo,
+                            Expression.Constant("Cannot convert string of length != 1 to char")), typeof(char)));
                 }
 
                 return base.Convert(metaObject, restrictedType, info, toType);
