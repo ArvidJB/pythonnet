@@ -183,12 +183,12 @@
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSHARP.Targets" />
-  <PropertyGroup>
-    <TargetAssembly>$(TargetPath)</TargetAssembly>
-    <TargetAssemblyPdb>$(TargetDir)$(TargetName).pdb</TargetAssemblyPdb>
-  </PropertyGroup>
   <Target Name="AfterBuild">
-    <Copy SourceFiles="$(TargetAssembly)" DestinationFolder="$(PythonBuildDir)" />
-    <!--Copy SourceFiles="$(TargetAssemblyPdb)" Condition="Exists('$(TargetAssemblyPdb)')" DestinationFolder="$(PythonBuildDir)" /-->
+    <ItemGroup>
+      <DllFilesToCopy Include="$(TargetDir)\*.dll" />
+      <PdbFilesToCopy Include="$(TargetDir)\*.pdb" />
+    </ItemGroup>
+    <Copy SourceFiles="@(DllFilesToCopy)" DestinationFolder="$(PythonBuildDir)" />
+    <!-- <Copy SourceFiles="@(PdbFilesToCopy)" DestinationFolder="$(PythonBuildDir)" /> -->
   </Target>
 </Project>
