@@ -65,6 +65,10 @@ namespace Python.Runtime
         /// <param name="memberToInvoke">should be
         /// a <see cref="Microsoft.Scripting.Actions.BoundMemberTracker"/> for instance calls
         /// or a <see cref="Microsoft.Scripting.Actions.MethodGroup"/> for static calls</param>
+        /// <param name="name">name of the function to invoke</param>
+        /// <param name="args">Python tuple with function call arguments</param>
+        /// <param name="kw">Python dictionary with named arguments</param>
+        /// <param name="argTypes">types the args should be converted to</param>
         public IntPtr Invoke(MemberTracker memberToInvoke, string name, IntPtr args, IntPtr kw, Type[] argTypes) {
             try
             {
